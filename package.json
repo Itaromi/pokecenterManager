@@ -20,10 +20,16 @@
   },
   "homepage": "https://github.com/Itaromi/pokecenterManager#readme",
   "dependencies": {
+    "@types/express": "^5.0.1",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "pg": "^8.14.1",
+    "postgres": "^3.4.5",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.22"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "typescript": "^5.8.3"
   }
 }
