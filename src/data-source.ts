@@ -1,6 +1,6 @@
 // src/data-source.ts (ou l'emplacement de votre fichier DataSource)
 
-import 'reflect-metadata'; // Important: doit etre importe une seule fois, au tout debut de votre application
+import 'reflect-metadata'; // Important : doit être importé une seule fois, au tout debut de votre application
 import { DataSource, DataSourceOptions } from 'typeorm';
 import path from 'path';
 
