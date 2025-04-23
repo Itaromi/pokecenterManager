@@ -10,5 +10,5 @@ export class TypeSoin {
     nom!: string;
 
     @OneToMany(() => Soin, (soin) => soin.typeSoin)
-    soins!: Soin[];
+    soin!: Soin[];
 }
