@@ -4,11 +4,11 @@ import { Soin } from './Soin';
 @Entity({ name: 'types_soins' })
 export class TypeSoin {
     @PrimaryGeneratedColumn()
-    id: number;
+    id!: number;
 
     @Column({ length: 50, unique: true })
-    nom: string;
+    nom!: string;
 
     @OneToMany(() => Soin, (soin) => soin.typeSoin)
-    soins: Soin[];
+    soins!: Soin[];
 }
