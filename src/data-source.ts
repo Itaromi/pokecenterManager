@@ -8,9 +8,9 @@ import path from 'path';
 // Assurez-vous que les chemins d'importation sont corrects
 import { PokemonAccount } from "./entity/PokemonAccount";
 import { PokemonPatient } from "./entity/PokemonPatient";
-import { PokemonSpecies } from "./entity/PokemonSpecies";
 import { Soin } from "./entity/Soin";
 import { TypeSoin } from "./entity/TypeSoin";
+import {PostgresConnectionOptions} from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 
 // --- Fonction utilitaire pour lire une variable d'environnement ---
@@ -83,7 +83,7 @@ const centralConfig: DataSourceOptions = {
 // --- Définition des options pour le template des bases par account ---
 // Cette configuration sert de modèle pour créer et se connecter aux bases de données spécifiques à chaque compte.
 // Elle n'est généralement PAS utilisée directement par les outils CLI de migration pour la base 'central'.
-const accountTemplateConfig: DataSourceOptions = {
+export const accountTemplateConfig: PostgresConnectionOptions = {
     name: "account_template", // Nom pour référer à ce modèle en code
     type: 'postgres', // Doit être le même SGBD que la base principale
     host: getRequiredEnv("DATABASE_HOST"), // Se connecte au même serveur de base de données
@@ -103,7 +103,6 @@ const accountTemplateConfig: DataSourceOptions = {
     entities: [
         // <-- Liste de TOUTES les entités qui iront dans les bases de données par account
         PokemonPatient,
-        PokemonSpecies,
         Soin,
         TypeSoin,
         // IMPORTANT: Pointez vers les fichiers .js compilés si vous utilisez TypeScript !
@@ -124,7 +123,7 @@ export const AppDataSource = new DataSource(centralConfig);
 
 // Si vous avez besoin d'accéder à l'instance pour le template d'account dans votre code, vous pouvez aussi l'exporter,
 // mais la CLI ne l'utilisera pas automatiquement pour les commandes de migration standard.
-// export const AccountTemplateDataSource = new DataSource(accountTemplateConfig);
+//export const AccountTemplateDataSource = new DataSource(accountTemplateConfig);
 
 
 // Note sur __dirname:

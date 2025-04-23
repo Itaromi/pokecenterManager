@@ -1,7 +1,6 @@
 import 'reflect-metadata'; // Assurez-vous que c'est la premiere ligne
 import express from 'express';
 import { AppDataSource } from './data-source'; // Importez votre DataSource
-import { PokemonSpecies } from './entity/PokemonSpecies';
 import { PokemonAccount } from './entity/PokemonAccount';
 import { CreatePokemonAccountDto } from './dto/CreatePokemonAccountDto';
 import bcrypt from 'bcrypt';
@@ -18,16 +17,7 @@ app.get('/', (req, res) => {
 });
 
 // Exemple de route pour interagir avec la BDD (apres initialization)
-app.get('/species', async (req, res) => {
-    try {
-        const speciesRepository = AppDataSource.getRepository(PokemonSpecies);
-        const allSpecies = await speciesRepository.find();
-        res.json(allSpecies);
-    } catch (error) {
-        console.error("Error fetching species:", error);
-        res.status(500).send("Error fetching data.");
-    }
-});
+
 
 app.post('/pokecenter/account', async (req, res) => {
     try {
