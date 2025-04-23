@@ -1,8 +1,8 @@
-import 'reflect-metadata'; // Important: doit etre importe une seule fois, au tout debut de votre application
+import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { PokemonSpecies } from './entity/PokemonSpecies';
 import path from 'path';
 import {PokemonAccount} from "./entity/PokemonAccount";
+import 'dotenv/config';
 
 export const AppDataSource = new DataSource({
     type: 'postgres', // Ou 'mysql', 'mssql', etc.

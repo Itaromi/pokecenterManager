@@ -5,6 +5,7 @@ import { PokemonSpecies } from './entity/PokemonSpecies';
 import { PokemonAccount } from './entity/PokemonAccount';
 import { CreatePokemonAccountDto } from './dto/CreatePokemonAccountDto';
 import bcrypt from 'bcrypt';
+import 'dotenv/config';
 
 
 const app = express();

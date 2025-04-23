@@ -1,24 +1,25 @@
-# Utilise une image Node.js LTS basee sur Alpine (petite taille)
-FROM node:20-alpine
+# Étape 1 : Builder l'app
+FROM node:20-alpine AS builder
 
-# Cree et definit le repertoire de travail dans le conteneur
 WORKDIR /app
 
-# Copie les fichiers package.json et package-lock.json (ou yarn.lock)
-# AVANT le reste pour optimiser le cache de build Docker
+# Copier package.json et lockfile pour installer les deps
 COPY package*.json ./
 
-# Installe TOUTES les dependances (y compris devDependencies pour nodemon/ts-node en dev)
-RUN npm install
+RUN npm ci --only=production
 
-# Copie tout le reste du code source
-# Ce code sera remplace par le volume de montage en mode dev, mais necessaire pour un build 'proche production'
+# Copier le reste du code
 COPY . .
 
-# Expose le port sur lequel votre application Express va ecouter
+# Étape 2 : Image finale
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copier seulement les deps et le code buildé depuis builder
+COPY --from=builder /app ./
+
+# Expose le port (ajuste si besoin)
 EXPOSE 3000
 
-# Commande par defaut pour lancer l'application (sera surchargee par docker-compose en dev)
-# Assurez-vous que cela correspond a la sortie de compilation si vous lancez en prod
-CMD ["node", "dist/index.js"]
-# Adapter 'dist/index.js' si votre point d'entree compile est different
+CMD ["node", "index.js"]
