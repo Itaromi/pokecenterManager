@@ -1,0 +1,41 @@
+{
+  "name": "pokecentermanager",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Itaromi/pokecenterManager#readme",
+  "bugs": {
+    "url": "https://github.com/Itaromi/pokecenterManager/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Itaromi/pokecenterManager.git"
+  },
+  "license": "ISC",
+  "author": "Joan C., Antoine F., Youn S.",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node-dev src/index.ts",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm migration:generate",
+    "migration:run": "npm run typeorm migration:run",
+    "migration:revert": "npm run typeorm migration:revert"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^5.1.0",
+    "pg": "^8.14.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.22"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.1",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
