@@ -2,6 +2,7 @@ import 'reflect-metadata'; // Important: doit etre importe une seule fois, au to
 import { DataSource } from 'typeorm';
 import { PokemonSpecies } from './entity/PokemonSpecies';
 import path from 'path';
+import {PokemonAccount} from "./entity/PokemonAccount";
 
 export const AppDataSource = new DataSource({
     type: 'postgres', // Ou 'mysql', 'mssql', etc.
@@ -13,8 +14,7 @@ export const AppDataSource = new DataSource({
     synchronize: false, // JAMAIS TRUE EN PRODUCTION ! Utilisez les migrations
     logging: false,
     entities: [
-        PokemonSpecies,
-
+        PokemonAccount
     ],
     migrations: [
         path.join(__dirname, 'migration/*.ts')
