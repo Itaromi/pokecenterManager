@@ -5,10 +5,10 @@ import express from 'express';
 import { DataSource } from 'typeorm'; // Importez DataSource ici
 // Importe l'export par défaut de data-source.ts, qui est un tableau de DataSources
 import { AppDataSource } from './data-source';
-// Importe votre DTO si vous l'utilisez
-import { CreatePokemonAccountDto } from './dto/CreatePokemonAccountDto';
 // Importe dotenv config si vous utilisez .env en dehors de Docker (sinon, Docker s'en charge)
 import 'dotenv/config';
+
+import { createPokemonAccountRouter } from './routes/PokemonAccountRoutes';
 
 // Importe le service que nous avons créé
 import { PokemonAccountService } from './service/PokemonAccountService';
@@ -24,7 +24,6 @@ app.use(express.json()); // Middleware pour parser le corps des requetes en JSON
 // Trouvez l'instance spécifique de la DataSource 'central' par son nom
 // Assurez-vous que 'central' est bien le nom défini dans data-source.ts
 const centralDataSource: DataSource = AppDataSource;
-
 if (!centralDataSource) {
     console.error("Configuration Error: The 'central' DataSource was not found in data-source.ts");
     process.exit(1); // Arrête l'application si la DataSource centrale est manquante
@@ -32,7 +31,6 @@ if (!centralDataSource) {
 
 // Déclarez une variable pour stocker l'instance initialisée du service
 let accountService: PokemonAccountService;
-
 
 // Fonction asynchrone pour gérer l'initialisation et le démarrage
 async function bootstrap() {
@@ -45,6 +43,22 @@ async function bootstrap() {
         // *** Instancier les services en leur passant les DataSources nécessaires ***
         accountService = new PokemonAccountService(centralDataSource);
         console.log("PokemonAccountService instantiated.");
+
+        //****************************************************************
+        // *** Monter les routeurs après l'initialisation des services ***
+
+        const pokemonAccountRouter = createPokemonAccountRouter(accountService);
+        app.use('/pokecenter', pokemonAccountRouter); // Toutes les routes définies dans pokemonAccountRouter seront préfixées par /pokecenter
+        console.log("Pokemon Account router mounted at /pokecenter");
+
+        // Route de test simple (peut rester ici ou être déplacée ailleurs)
+        app.get('/', (req, res) => {
+            res.send('Hello from the Pokemon App API!');
+        });
+        console.log("General test route mounted at /");
+
+        // *** Autres routeurs peuvent être montés ici de la même manière ***
+        // ******************************************************************
 
         // *** Démarrer le serveur Express ***
         app.listen(port, () => {
@@ -89,30 +103,6 @@ async function bootstrap() {
         }
     }
 }
-
-// --- Routes Express (Utilisent maintenant le service) ---
-
-// Route de test simple
-app.get('/', (req, res) => {
-    res.send('Hello from the Pokemon App API!');
-});
-
-// Route pour créer un compte Pokecenter (utilise le service)
-app.post('/pokecenter/account', async (req, res) => {
-    try {
-        // Utilisez le service accountService pour créer le compte
-        // Le service s'occupe de sauvegarder dans la DB centrale ET de déclencher la création de la DB secondaire
-        const newCompte = await accountService.createAccount(req.body as CreatePokemonAccountDto);
-
-        // Le service a déjà géré la création de la DB secondaire.
-        // Vous pouvez renvoyer l'objet compte créé si nécessaire.
-        res.status(201).json({ message: 'Compte Pokecenter créé avec succès !', account: newCompte }); // Renvoyer du JSON est souvent mieux
-    } catch (error) {
-        console.error("Erreur lors de la création du compte :", error);
-        // Vous pourriez vouloir renvoyer des messages d'erreur plus spécifiques en production
-        res.status(500).json({ message: "Erreur serveur lors de la création du compte" });
-    }
-});
 
 // Démarre le processus d'initialisation et le serveur
 bootstrap().catch(error => {
