@@ -6,7 +6,7 @@ WORKDIR /app
 # Copier package.json et lockfile pour installer les deps
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm ci
 
 # Copier le reste du code
 COPY . .
@@ -22,4 +22,4 @@ COPY --from=builder /app ./
 # Expose le port (ajuste si besoin)
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+CMD ["npm", "run", "dev"]
