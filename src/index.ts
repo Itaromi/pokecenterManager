@@ -4,6 +4,7 @@ import { AppDataSource } from './data-source'; // Importez votre DataSource
 import { PokemonAccount } from './entity/PokemonAccount';
 import { CreatePokemonAccountDto } from './dto/CreatePokemonAccountDto';
 import bcrypt from 'bcrypt';
+import 'dotenv/config';
 
 
 const app = express();
