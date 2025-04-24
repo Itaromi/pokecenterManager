@@ -25,8 +25,7 @@ services:
       - .:/app
       # Optionnel: Pour eviter les problemes de permissions ou de re-installation de node_modules,
       # vous pouvez monter node_modules dans un volume separe.
-      # - /app/node_modules # Decommenter si necessaire
-
+      - node_modules:/app/node_modules
     # Surcharge la commande par defaut du Dockerfile pour lancer l'application en mode dev
     # Execute le script 'dev' defini dans votre package.json
     command: npm run dev
@@ -52,4 +51,4 @@ services:
 volumes:
   db_data: {} # Volume pour les donnees PostgreSQL
   # Si vous avez decommentee la ligne '/app/node_modules' ci-dessus, ajoutez aussi :
-  # node_modules: {} # Volume pour les dependances Node.js (optionnel)
+  node_modules: {} # Volume pour les dependances Node.js (optionnel)
