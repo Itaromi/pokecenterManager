@@ -14,6 +14,7 @@ services:
       DATABASE_PASSWORD: motdepassedelabase # A remplacer (Utiliser des secrets en prod!)
       DATABASE_NAME: mabasepokemon # A remplacer
       NODE_ENV: development # Indique que l'on est en environnement de developpement
+      ENCRYPTION_SECRET: monSuperSecretPoké123 #TODO ajouter un secret en prod et pas en clair ici
 
     depends_on:
       - db # Le service 'app' depend du service 'db'
