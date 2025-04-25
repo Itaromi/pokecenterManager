@@ -21,6 +21,9 @@ export class PokemonAccount {
     @Column({ type: "varchar", length: 512 })
     ville!: string;
 
+    @Column({ type: "varchar", length: 512 })
+    dbName!: string;
+
     @CreateDateColumn({ name: "date_creation", type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     date_creation!: Date;
 
@@ -34,6 +37,7 @@ export class PokemonAccount {
         this.email = encrypt(this.email);
         this.region = encrypt(this.region);
         this.ville = encrypt(this.ville);
+        this.dbName = encrypt(this.dbName);
     }
 
     @AfterLoad()
@@ -42,10 +46,13 @@ export class PokemonAccount {
         this.decryptedFields.email = decrypt(this.email);
         this.decryptedFields.region = decrypt(this.region);
         this.decryptedFields.ville = decrypt(this.ville);
+        this.decryptedFields.dbName = encrypt(this.dbName);
     }
 
     getDecryptedNom() { return this.decryptedFields.nom; }
     getDecryptedEmail() { return this.decryptedFields.email; }
     getDecryptedRegion() { return this.decryptedFields.region; }
     getDecryptedVille() { return this.decryptedFields.ville; }
+    getDecrypteddbName() { return this.decryptedFields.dbName; }
+
 }
