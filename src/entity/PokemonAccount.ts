@@ -53,6 +53,6 @@ export class PokemonAccount {
     getDecryptedEmail() { return this.decryptedFields.email; }
     getDecryptedRegion() { return this.decryptedFields.region; }
     getDecryptedVille() { return this.decryptedFields.ville; }
-    getDecrypteddbName() { return this.decryptedFields.dbName; }
+    getDecryptedDbName() { return this.decryptedFields.dbName; }
 
 }
