@@ -3,6 +3,8 @@ import {CreatePokemonAccountDto} from "../dto/CreatePokemonAccountDto";
 import {PokemonAccount} from "../entity/PokemonAccount";
 import bcrypt from "bcrypt";
 import {createAccountDatabaseAndSchema} from "../utils/DatabaseUtils";
+import {Request, Response} from "express";
+import {generateToken} from "../utils/jwt";
 
 export class PokemonAccountService {
     private centralDataSource: DataSource;
@@ -43,5 +45,25 @@ export class PokemonAccountService {
         }
 
         return newAccount;
+    }
+
+    async login(req: Request, res: Response): Promise<void> {
+        const { email, mot_de_passe } = req.body;
+
+        const accountRepository = this.centralDataSource.getRepository(PokemonAccount);
+        const account = await accountRepository.findOneBy({ email });
+
+        if (!account) {
+            throw new Error('Compte non trouvé.');
+        }
+
+        const match = await bcrypt.compare(mot_de_passe, account.mot_de_passe_hash);
+        if (!match) {
+            throw new Error('Identifiants invalides.');
+        }
+
+        const token = generateToken({ id: account.id, email: account.email });
+
+        res.json({ token });
     }
 }
