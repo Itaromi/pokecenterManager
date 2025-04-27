@@ -46,13 +46,13 @@ export class PokemonAccount {
         this.decryptedFields.email = decrypt(this.email);
         this.decryptedFields.region = decrypt(this.region);
         this.decryptedFields.ville = decrypt(this.ville);
-        this.decryptedFields.dbName = encrypt(this.dbName);
+        this.decryptedFields.dbName = decrypt(this.dbName);
     }
 
     getDecryptedNom() { return this.decryptedFields.nom; }
     getDecryptedEmail() { return this.decryptedFields.email; }
     getDecryptedRegion() { return this.decryptedFields.region; }
     getDecryptedVille() { return this.decryptedFields.ville; }
-    getDecryptedDbName() { return this.decryptedFields.dbName; }
+    getDecryptedDbName(){ return this.decryptedFields.dbName; }
 
 }

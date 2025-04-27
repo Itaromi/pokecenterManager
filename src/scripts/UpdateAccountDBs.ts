@@ -1,10 +1,8 @@
-/**
- * src/scripts/updateAccountDbs.ts
- * Script pour appliquer les migrations secondaires à toutes les bases de données d'account.
-  */
+// src/scripts/updateAccountDbs.ts
+// Script pour appliquer les migrations secondaires à toutes les bases de données d'account.
 
 import 'reflect-metadata'; // Nécessaire pour TypeORM
-import { DataSource } from 'typeorm';
+import { DataSource, Table } from 'typeorm'; // Importez Table pour la création dynamique si nécessaire
 // Importez la configuration template de votre source de données secondaire
 import { accountTemplateConfig } from '../data-source';
 // Importez la source de données centrale pour pouvoir lister les bases secondaires
@@ -13,6 +11,11 @@ import path from 'path';
 // Importez dotenv si vous utilisez des variables d'env direct dans ce script (pas recommandé dans Docker)
 // import * as dotenv from 'dotenv';
 // dotenv.config(); // Charge les variables depuis .env si le script est exécuté sur l'hôte
+
+// --- Importez votre service dédié ---
+import { DbListService } from '../service/DbListService'; // !! Ajustez le chemin d'importation !!
+// -------------------------------------
+
 
 // --- Configuration ---
 // Chemin vers le répertoire où TypeORM trouvera les migrations secondaires *compilées*
@@ -24,8 +27,8 @@ const COMPILED_ACCOUNT_MIGRATIONS_DIR = path.join(__dirname, '../migration/accou
 
 // --- Fonction pour exécuter les migrations sur une seule base de données secondaire ---
 // Prend le nom de la base de données secondaire en argument
-async function runMigrationsForSingleAccountDb(dbName: string): Promise<void> {
-    console.log(`[Migration] Attempting to connect to database: ${dbName}`);
+async function runMigrationsForSingleAccountDb(dbName: string | undefined): Promise<void> {
+    console.log(`[Migration] Attempting to update database: ${dbName}`);
 
     // Crée une instance de DataSource dynamique pour cette base spécifique
     const accountDataSource = new DataSource({
@@ -38,10 +41,10 @@ async function runMigrationsForSingleAccountDb(dbName: string): Promise<void> {
         // Indique où trouver les migrations *compilées* secondaires pour cette DataSource
         migrations: [path.join(COMPILED_ACCOUNT_MIGRATIONS_DIR, '*.js')],
         // Assurez-vous que les entités secondaires sont incluses via accountTemplateConfig
-        // entities: accountTemplateConfig.entities,
+        // entities: accountTemplateConfig.entities, // Déjà inclus via ...accountTemplateConfig
 
         // Vous pouvez surcharger le logging pour ce script si vous voulez des logs différents de l'application principale
-        // logging: true,
+        logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'schema'] : ['error'],
     });
 
     try {
@@ -49,28 +52,84 @@ async function runMigrationsForSingleAccountDb(dbName: string): Promise<void> {
         await accountDataSource.initialize();
         console.log(`[Migration] DataSource "${accountDataSource.options.name}" initialized for database "${dbName}".`);
 
-        // Exécute les migrations en attente pour cette base
-        console.log(`[Migration] Running pending migrations for database "${dbName}"...`);
-        const executedMigrations = await accountDataSource.runMigrations();
+        const queryRunner = accountDataSource.createQueryRunner();
 
-        if (executedMigrations.length > 0) {
-            console.log(`[Migration] Successfully executed ${executedMigrations.length} migrations for database "${dbName}".`);
-            executedMigrations.forEach(migration => console.log(`  - ${migration.name}`));
-        } else {
-            console.log(`[Migration] No pending migrations found for database "${dbName}".`);
+        try {
+            // --- Logique pour gérer l'erreur "relation already exists" ---
+            // Cette logique est destinée à marquer la première migration (InitialSecondarySchema)
+            // comme exécutée si le schéma semble déjà présent (synchronize a tourné).
+            // IMPORTANT : Remplacez 'InitialSecondarySchema...' par le NOM EXACT de votre première migration secondaire.
+            const initialMigrationName = 'InitialSecondarySchema1745581829021'; // !! AJUSTEZ CE NOM !!
+
+            // Vérifier si la table 'migrations' existe
+            const migrationsTableExists = await queryRunner.hasTable('migrations');
+
+            let isInitialMigrationRecorded = false;
+            if (migrationsTableExists) {
+                try {
+                    // Utilisez le QueryRunner pour interroger la table migrations
+                    const recordedMigration = await queryRunner.query(`SELECT * FROM "migrations" WHERE "name" = $1`, [initialMigrationName]);
+                    isInitialMigrationRecorded = recordedMigration.length > 0;
+                } catch (innerError) {
+                    console.warn(`[Migration] Could not check for initial migration record in DB "${dbName}":`, innerError);
+                    // Si on ne peut même pas interroger la table migrations, il y a un problème plus profond.
+                    // On laisse l'erreur remonter ou on la gère comme un échec de mise à jour.
+                }
+            }
+
+            // Vérifier si des tables *autres que* 'migrations' existent
+            const allTables = await queryRunner.getTables();
+            const hasNonMigrationTables = allTables.some(table => table.name !== 'migrations');
+
+
+            // Si des tables (autres que migrations) existent ET que la migration initiale n'est PAS enregistrée :
+            // On insère l'enregistrement de la migration initiale pour dire à TypeORM qu'elle est déjà "appliquée".
+            if (hasNonMigrationTables && !isInitialMigrationRecorded) {
+                if (!migrationsTableExists) {
+                    // Créer la table migrations si elle n'existe pas mais que d'autres tables existent
+                    console.log(`[Migration] Creating migrations table in "${dbName}"...`);
+                    await queryRunner.createTable(new Table({
+                        name: "migrations",
+                        columns: [
+                            { name: "id", type: "serial", isPrimary: true },
+                            { name: "timestamp", type: "bigint", isNullable: false },
+                            { name: "name", type: "varchar", isNullable: false }
+                        ]
+                    }), true); // 'true' pour ignorer si la table existe déjà (pour plus de robustesse)
+                    console.log(`[Migration] Migrations table created in "${dbName}".`);
+                }
+
+                console.log(`[Migration] Initial schema seems present in "${dbName}". Marking "${initialMigrationName}" as executed.`);
+                // Insérer manuellement l'enregistrement de la migration initiale
+                await queryRunner.query(`INSERT INTO "migrations" ("timestamp", "name") VALUES ($1, $2)`, [Date.now(), initialMigrationName]);
+            }
+            // --- Fin de la logique de gestion synchronize ---
+
+
+            console.log(`[Migration] Running pending migrations for database "${dbName}"...`);
+            // Exécute les migrations restantes (exclura la migration initiale si elle a été marquée)
+            const executedMigrations = await accountDataSource.runMigrations();
+
+            if (executedMigrations.length > 0) {
+                console.log(`[Migration] Successfully executed ${executedMigrations.length} migrations for database "${dbName}".`);
+                executedMigrations.forEach(migration => console.log(`  - ${migration.name}`));
+            } else {
+                console.log(`[Migration] No pending migrations found for database "${dbName}".`);
+            }
+
+        } catch (error) {
+            console.error(`[Migration] Error running migrations for database "${dbName}":`, error);
+            throw error; // Relance l'erreur
+        } finally {
+            // S'assurer que le queryRunner est libéré
+            await queryRunner.release();
         }
+
 
     } catch (error) {
         console.error(`[Migration] Error running migrations for database "${dbName}":`, error);
-        // *** Gérer l'erreur de manière robuste ici ***
-        // En production, vous devriez :
-        // 1. Loguer l'erreur en détail (inclure le nom de la base).
-        // 2. NE PAS ARRÊTER le processus global (pour les mises à jour de masse).
-        // 3. Ajouter le nom de la base à une liste d'échecs.
-        // 4. Vous pourriez ajouter une logique de retry simple pour certains types d'erreurs (ex: connexion perdue).
-        throw error; // On relance l'erreur pour que la fonction principale puisse la capturer et la gérer (ex: l'ajouter à la liste d'échecs)
+        throw error; // Relance l'erreur
     } finally {
-        // S'assurer que la connexion est fermée après l'exécution
         if (accountDataSource && accountDataSource.isInitialized) {
             console.log(`[Migration] Closing DataSource "${accountDataSource.options.name}" connection for database "${dbName}".`);
             await accountDataSource.destroy();
@@ -82,12 +141,9 @@ async function runMigrationsForSingleAccountDb(dbName: string): Promise<void> {
 async function updateAllAccountDatabases() {
     console.log("--- Starting update process for all account databases ---");
 
-    // Étape 1: Initialiser la connexion à la base centrale pour obtenir la liste des comptes
+    // Étape 1: Initialiser la connexion à la base centrale
     let centralDataSourceInstance: DataSource | undefined;
     try {
-        // Utilise l'instance centrale si elle est déjà initialisée (si ce script est lancé dans l'app principale)
-        // Sinon, l'initialise spécifiquement pour ce script.
-        // Cela évite de ré-initialiser si le script est exécuté dans le contexte de l'application principale.
         if (!CentralDataSource.isInitialized) {
             console.log("[Main] Initializing Central DataSource...");
             centralDataSourceInstance = await CentralDataSource.initialize();
@@ -97,34 +153,36 @@ async function updateAllAccountDatabases() {
             console.log("[Main] Central DataSource already initialized.");
         }
 
-        // Étape 2: Récupérer la liste des noms de bases secondaires depuis la base centrale
-        console.log("[Main] Fetching list of secondary database names from central DB...");
-        // REMPLACEZ 'PokemonAccount' par le nom de votre entité de compte central
-        // REMPLACEZ 'secondaryDbNameColumn' par le nom CORRECT de la PROPRIÉTÉ dans votre entité PokemonAccount
-        // qui stocke le nom de la base de données secondaire (par ex. 'dbName', 'accountDatabase').
-        const accountRepository = centralDataSourceInstance.getRepository("PokemonAccount");
-        const accounts = await accountRepository
-            .createQueryBuilder("account")
-            .select("account.secondaryDbNameColumn", "dbName") // Sélectionnez UNIQUEMENT la colonne du nom de la DB
-            .where("account.secondaryDbNameColumn IS NOT NULL AND account.secondaryDbNameColumn != ''") // Exclure les comptes sans DB secondaire
-            .getRawMany(); // Utilisez getRawMany car on sélectionne une seule colonne brute
+        // --- Utiliser le service dédié pour obtenir les noms de bases (Déchiffrés) ---
+        console.log("[Main] Using DbListService to fetch list of secondary database names...");
+        // Instanciez le service en lui passant la DataSource centrale
+        const dbListService = new DbListService(centralDataSourceInstance); // !! Ajustez si le constructeur est différent !!
+        const rawAccountDbNames = await dbListService.getAllDbNames(); // <-- Appelle le service pour obtenir les noms déchiffrés (potentiellement invalides)
+        // ----------------------------------------------------------------------------
 
-        const accountDbNames: string[] = accounts
-            .map(account => account.dbName as string); // Mappez pour extraire les noms et assurez le type
+        // --- Filtrer les noms de bases de données invalides ---
+        // Les logs précédents montraient des '' et des noms avec 'undefined'/'null'.
+        // Cette étape filtre pour ne garder que les noms qui ressemblent à des noms de base valides.
+        const accountDbNames = rawAccountDbNames.filter(dbName =>
+                typeof dbName === 'string' && // Doit être une chaîne
+                dbName.length > 0 &&          // Ne doit pas être vide
+                !dbName.includes('undefined') && // Ne doit pas contenir 'undefined' (suite à des erreurs de génération initiales)
+                !dbName.includes('null') &&      // Ne doit pas contenir 'null'
+                dbName.length < 64 // Les noms de DB PostgreSQL ont une longueur max (par défaut 63)
+            // Ajoutez d'autres critères de validation si votre format de nom est plus strict (ex: commence par PC_, pas de caractères spéciaux non autorisés...)
+        );
+        console.log("[Main] Valid database names after filtering:", accountDbNames);
+        console.log(`[Main] Found ${accountDbNames.length} valid secondary databases to potentially update after filtering.`);
 
-        console.log(`[Main] Found ${accountDbNames.length} secondary databases to potentially update.`);
-        console.log("[Main] Database names:", accountDbNames);
 
-
-        // Étape 3: Parcourir et mettre à jour chaque base secondaire
-        const failedUpdates: { dbName: string, error: any }[] = [];
-        for (const dbName of accountDbNames) {
+        // Étape 3: Parcourir et mettre à jour chaque base secondaire (uniquement les noms valides)
+        const failedUpdates: { dbName: string | undefined, error: any }[] = [];
+        for (const dbName of accountDbNames) { // Boucle sur la liste filtrée des noms valides
             try {
                 await runMigrationsForSingleAccountDb(dbName);
             } catch (error) {
                 console.error(`[Main] Update process failed for database: ${dbName}. Recording failure.`);
                 failedUpdates.push({ dbName, error });
-                // Ici, vous pourriez aussi logger l'erreur complète, envoyer une alerte, etc.
             }
         }
 
@@ -134,19 +192,16 @@ async function updateAllAccountDatabases() {
             failedUpdates.forEach(failure => {
                 console.error(`- DB: ${failure.dbName}, Error: ${failure.error}`);
             });
-            // En production, vous pourriez vouloir qu'un processus échoue globalement si des mises à jour ne passent pas.
-            process.exit(1); // Quitte avec code d'erreur pour signaler des échecs
+            process.exit(1);
         } else {
             console.log("[Main] All secondary databases updated successfully.");
-            process.exit(0); // Quitte avec code de succès
+            process.exit(0);
         }
 
     } catch (error) {
         console.error("[Main] Fatal error during the overall update process:", error);
-        process.exit(1); // Quitte en cas d'erreur fatale (ex: connexion centrale échouée)
+        process.exit(1);
     } finally {
-        // Ferme la connexion centrale UNIQUEMENT si ce script l'a initialisée spécifiquement.
-        // Si ce script tourne DANS votre application principale, la connexion est gérée ailleurs.
         if (centralDataSourceInstance && centralDataSourceInstance.isInitialized && centralDataSourceInstance !== CentralDataSource) {
             console.log("[Main] Closing Central DataSource connection used by update script...");
             await centralDataSourceInstance.destroy();
@@ -155,16 +210,11 @@ async function updateAllAccountDatabases() {
 }
 
 // --- Point d'entrée du script ---
-// Exécute la fonction principale et gère les erreurs globales
-// Utilise un IIFE (Immediately Invoked Function Expression) asynchrone
 (async () => {
     try {
         await updateAllAccountDatabases();
     } catch (error) {
-        // Cet attrape peut capturer des erreurs qui surviennent avant ou après
-        // l'appel de updateAllAccountDatabases si elles ne sont pas promises.
-        // L'important est que updateAllAccountDatabases gère ses propres erreurs internes et quitte avec process.exit
         console.error("Script execution failed:", error);
-        process.exit(1); // Assure la sortie avec erreur si le script lui-même n'a pas appelé process.exit
+        process.exit(1);
     }
 })();
