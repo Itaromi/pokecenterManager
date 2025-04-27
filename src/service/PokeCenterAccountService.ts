@@ -6,7 +6,7 @@ import {createAccountDatabaseAndSchema} from "../utils/DatabaseUtils";
 import {Request, Response} from "express";
 import {generateToken} from "../utils/jwt";
 
-export class PokemonAccountService {
+export class PokeCenterAccountService {
     private centralDataSource: DataSource;
 
     constructor(centralDataSource: DataSource) {

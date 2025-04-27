@@ -18,6 +18,9 @@ export class PokemonPatient {
     @Column({ type: 'varchar', length: 512, name: 'unique_id', nullable: false, unique: true })
     uniqueId!: string;
 
+    @Column({ type: 'varchar', length: 512, name: 'unique_id_hash', nullable: false })
+    uniqueIdHash!: string;
+
     @Column({ type: 'varchar', length: 512, name: 'nickname', nullable: false })
     nickname!: string;
 
@@ -103,6 +106,7 @@ export class PokemonPatient {
 
     // Getters pour accéder aux valeurs déchiffrées
     getDecryptedUniqueId() { return this.decryptedFields.uniqueId as string; }
+    getUniqueIdHash() { return this.uniqueIdHash; }
     getDecryptedNickname() { return this.decryptedFields.nickname as string; }
     getDecryptedSexe() { return this.decryptedFields.sexe as string; }
     getDecryptedTrainerId() { return this.decryptedFields.trainerId as string; }
