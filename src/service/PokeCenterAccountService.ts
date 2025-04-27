@@ -4,7 +4,7 @@ import {PokemonAccount} from "../entity/PokemonAccount";
 import bcrypt from "bcrypt";
 import {createAccountDatabaseAndSchema} from "../utils/DatabaseUtils";
 
-export class PokemonAccountService {
+export class PokeCenterAccountService {
     private centralDataSource: DataSource;
 
     constructor(centralDataSource: DataSource) {

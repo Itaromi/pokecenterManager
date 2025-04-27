@@ -1,5 +1,6 @@
 import {DataSource} from "typeorm";
 import {PokemonAccount} from "../entity/PokemonAccount";
+import bcrypt from "bcrypt";
 
 export class DbListService {
     private centralDataSource: DataSource;
@@ -14,6 +15,16 @@ export class DbListService {
         const accounts = await accountRepo.find();
 
         return accounts.map(account => account.getDecryptedDbName());
+    }
+
+    async getDbNameById(id: number): Promise<string | undefined> {
+        const accountRepo = this.centralDataSource.getRepository(PokemonAccount);
+
+        const account = await accountRepo.findOne({
+            where: { id }
+        });
+
+        return account ? account.getDecryptedDbName() : undefined;
     }
 }
 
