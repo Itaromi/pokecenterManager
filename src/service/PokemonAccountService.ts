@@ -23,7 +23,10 @@ export class PokemonAccountService {
             throw new Error("Failed to create account");
         }
 
-        const accountDatabaseName = `PC_${newAccount.ville}_${newAccount.region}_${newAccount.id}`;
+        const accountDatabaseName = `PC_${accountData.ville}_${accountData.region}_${newAccount.id}`;
+
+        newAccount.dbName = accountDatabaseName;
+        await accountRepository.save(newAccount); // Met à jour le nom de la DB dans l'instance centrale
 
         console.log(`Account créé avec ID ${newAccount.id}. Préparation à créer la DB secondaire: ${accountDatabaseName}`);
 
