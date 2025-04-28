@@ -34,7 +34,6 @@ export class PokemonAccount {
     @BeforeUpdate()
     encryptSensitiveData() {
         this.nom = encrypt(this.nom);
-        this.email = encrypt(this.email);
         this.region = encrypt(this.region);
         this.ville = encrypt(this.ville);
         this.dbName = encrypt(this.dbName);
@@ -43,14 +42,14 @@ export class PokemonAccount {
     @AfterLoad()
     decryptSensitiveData() {
         this.decryptedFields.nom = decrypt(this.nom);
-        this.decryptedFields.email = decrypt(this.email);
         this.decryptedFields.region = decrypt(this.region);
         this.decryptedFields.ville = decrypt(this.ville);
         this.decryptedFields.dbName = decrypt(this.dbName);
     }
 
     getDecryptedNom() { return this.decryptedFields.nom; }
-    getDecryptedEmail() { return this.decryptedFields.email; }
+    getEmail() { return this.email; }
+    getMotDePasseHash() { return this.mot_de_passe_hash; }
     getDecryptedRegion() { return this.decryptedFields.region; }
     getDecryptedVille() { return this.decryptedFields.ville; }
     getDecryptedDbName(){ return this.decryptedFields.dbName; }
