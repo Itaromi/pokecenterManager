@@ -14,6 +14,7 @@ services:
       DATABASE_PASSWORD: motdepassedelabase # A remplacer (Utiliser des secrets en prod!)
       DATABASE_NAME: mabasepokemon # A remplacer
       NODE_ENV: development # Indique que l'on est en environnement de developpement
+      ENCRYPTION_SECRET: monSuperSecretPoké123 #TODO ajouter un secret en prod et pas en clair ici
 
     depends_on:
       - db # Le service 'app' depend du service 'db'
@@ -46,9 +47,22 @@ services:
       # Volume nomme pour la persistance des donnees de la BDD
       - db_data:/var/lib/postgresql/data
     restart: unless-stopped
-
+  db_account_migration_test:
+    image: postgres:16-alpine # Utilisez la même image ou une compatible
+    container_name: pokecentermanager-db-account-migration-test # Nom plus clair
+    environment:
+      POSTGRES_USER: monutilisateur_test # Utilisez un utilisateur potentiellement différent
+      POSTGRES_PASSWORD: monmotdepassetest # Utilisez un mot de passe différent
+      POSTGRES_DB: secondary_migration_db # Nom de la base de données dédiée à la génération
+    ports:
+      - "5433:5432" # Mapper sur un port différent sur l'hôte pour éviter les conflits si besoin
+    volumes:
+      - db_account_migration_test_data:/var/lib/postgresql/data # Volume dédié pour sa persistance
+    # N'a pas besoin de dépendre d'autres services
+    # Ne pas inclure dans les dépendances de 'app'
 # Definition des volumes nommes
 volumes:
   db_data: {} # Volume pour les donnees PostgreSQL
   # Si vous avez decommentee la ligne '/app/node_modules' ci-dessus, ajoutez aussi :
   node_modules: {} # Volume pour les dependances Node.js (optionnel)
+  db_account_migration_test_data: {}

@@ -3,8 +3,10 @@ import {CreatePokemonAccountDto} from "../dto/CreatePokemonAccountDto";
 import {PokemonAccount} from "../entity/PokemonAccount";
 import bcrypt from "bcrypt";
 import {createAccountDatabaseAndSchema} from "../utils/DatabaseUtils";
+import {Request, Response} from "express";
+import {generateToken} from "../utils/jwt";
 
-export class PokemonAccountService {
+export class PokeCenterAccountService {
     private centralDataSource: DataSource;
 
     constructor(centralDataSource: DataSource) {
@@ -23,7 +25,10 @@ export class PokemonAccountService {
             throw new Error("Failed to create account");
         }
 
-        const accountDatabaseName = `PC_${newAccount.ville}_${newAccount.region}_${newAccount.id}`;
+        const accountDatabaseName = `PC_${accountData.ville}_${accountData.region}_${newAccount.id}`;
+
+        newAccount.dbName = accountDatabaseName;
+        await accountRepository.save(newAccount); // Met à jour le nom de la DB dans l'instance centrale
 
         console.log(`Account créé avec ID ${newAccount.id}. Préparation à créer la DB secondaire: ${accountDatabaseName}`);
 
@@ -40,5 +45,42 @@ export class PokemonAccountService {
         }
 
         return newAccount;
+    }
+
+    async login(req: Request, res: Response): Promise<void> {
+        const { email, mot_de_passe } = req.body;
+
+
+        const accountRepository = this.centralDataSource.getRepository(PokemonAccount);
+
+        try {
+            const account: PokemonAccount | null = await accountRepository.findOneBy({email});
+
+            const mot_de_passe_hash = account?.mot_de_passe_hash || "";
+
+            console.log("mot_de_passe_hash : ", mot_de_passe_hash);
+            console.log("email : ", email);
+            if (!account) {
+                throw new Error('Compte non trouvé.');
+            }
+
+            const match = await bcrypt.compare(mot_de_passe, mot_de_passe_hash);
+
+            if (!match) {
+                throw new Error('Identifiants invalides.');
+            }
+
+            const token = generateToken({id: account.id, email: account.email});
+
+            res.json({token});
+        } catch (error) {
+            console.error('Erreur lors de la connexion :', error);
+            res.status(401).json({error: 'Erreur lors de la connexion'});
+
+        } finally {
+            if (this.centralDataSource && this.centralDataSource.isInitialized) {
+                await this.centralDataSource.destroy();
+            }
+        }
     }
 }

@@ -8,10 +8,11 @@ import { AppDataSource } from './data-source';
 // Importe dotenv config si vous utilisez .env en dehors de Docker (sinon, Docker s'en charge)
 import 'dotenv/config';
 
-import { createPokemonAccountRouter } from './routes/PokemonAccountRoutes';
+import { PokeCenterAccountRouter } from './routes/PokeCenterAccountRoutes';
 
 // Importe le service que nous avons créé
-import { PokemonAccountService } from './service/PokemonAccountService';
+import { PokeCenterAccountService } from './service/PokeCenterAccountService';
+import {AuthRouter} from "./routes/authRoutes";
 
 // Configure Express
 const app = express();
@@ -30,7 +31,7 @@ if (!centralDataSource) {
 }
 
 // Déclarez une variable pour stocker l'instance initialisée du service
-let accountService: PokemonAccountService;
+let accountService: PokeCenterAccountService;
 
 // Fonction asynchrone pour gérer l'initialisation et le démarrage
 async function bootstrap() {
@@ -41,15 +42,19 @@ async function bootstrap() {
         console.log("TypeORM DataSource 'central' initialized successfully!");
 
         // *** Instancier les services en leur passant les DataSources nécessaires ***
-        accountService = new PokemonAccountService(centralDataSource);
+        accountService = new PokeCenterAccountService(centralDataSource);
         console.log("PokemonAccountService instantiated.");
 
         //****************************************************************
         // *** Monter les routeurs après l'initialisation des services ***
 
-        const pokemonAccountRouter = createPokemonAccountRouter(accountService);
+        const pokemonAccountRouter = PokeCenterAccountRouter(accountService);
         app.use('/pokecenter', pokemonAccountRouter); // Toutes les routes définies dans pokemonAccountRouter seront préfixées par /pokecenter
         console.log("Pokemon Account router mounted at /pokecenter");
+
+        const authRouter = AuthRouter(accountService);
+        app.use('/pokecenter', authRouter);
+        console.log("Bienvenue ${req.user.email}!");
 
         // Route de test simple (peut rester ici ou être déplacée ailleurs)
         app.get('/', (req, res) => {

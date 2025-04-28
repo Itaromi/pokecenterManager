@@ -1,11 +1,11 @@
 // src/routes/pokemonAccountRoutes.ts
 
 import { Router, Request, Response } from 'express';
-import { PokemonAccountService } from '../service/PokemonAccountService'; // Assurez-vous que le chemin est correct
+import { PokeCenterAccountService } from '../service/PokeCenterAccountService'; // Assurez-vous que le chemin est correct
 import { CreatePokemonAccountDto } from '../dto/CreatePokemonAccountDto'; // Assurez-vous que le chemin est correct
 
 
-export function createPokemonAccountRouter(accountService: PokemonAccountService): Router {
+export function PokeCenterAccountRouter(accountService: PokeCenterAccountService): Router {
     const router = Router();
 
     // Route pour créer un compte Pokecenter
