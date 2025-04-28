@@ -50,22 +50,37 @@ export class PokeCenterAccountService {
     async login(req: Request, res: Response): Promise<void> {
         const { email, mot_de_passe } = req.body;
 
-        const hashEmail = await bcrypt.hash(email, 10);
 
         const accountRepository = this.centralDataSource.getRepository(PokemonAccount);
-        const account = await accountRepository.findOneBy({ hashEmail });
 
-        if (!account) {
-            throw new Error('Compte non trouvé.');
+        try {
+            const account: PokemonAccount | null = await accountRepository.findOneBy({email});
+
+            const mot_de_passe_hash = account?.mot_de_passe_hash || "";
+
+            console.log("mot_de_passe_hash : ", mot_de_passe_hash);
+            console.log("email : ", email);
+            if (!account) {
+                throw new Error('Compte non trouvé.');
+            }
+
+            const match = await bcrypt.compare(mot_de_passe, mot_de_passe_hash);
+
+            if (!match) {
+                throw new Error('Identifiants invalides.');
+            }
+
+            const token = generateToken({id: account.id, email: account.email});
+
+            res.json({token});
+        } catch (error) {
+            console.error('Erreur lors de la connexion :', error);
+            res.status(401).json({error: 'Erreur lors de la connexion'});
+
+        } finally {
+            if (this.centralDataSource && this.centralDataSource.isInitialized) {
+                await this.centralDataSource.destroy();
+            }
         }
-
-        const match = await bcrypt.compare(mot_de_passe, account.mot_de_passe_hash);
-        if (!match) {
-            throw new Error('Identifiants invalides.');
-        }
-
-        const token = generateToken({ id: account.id, email: account.email });
-
-        res.json({ token });
     }
 }
