@@ -56,6 +56,9 @@ async function bootstrap() {
         app.use('/pokecenter', authRouter);
         console.log("Bienvenue ${req.user.email}!");
 
+        const protectedRouter = PokeCenterAccountRouter(accountService);
+        app.use('/pokecenter', protectedRouter);
+
         // Route de test simple (peut rester ici ou être déplacée ailleurs)
         app.get('/', (req, res) => {
             res.send('Hello from the Pokemon App API!');

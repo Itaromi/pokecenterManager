@@ -50,7 +50,6 @@ export class PokeCenterAccountService {
     async login(req: Request, res: Response): Promise<void> {
         const { email, mot_de_passe } = req.body;
 
-
         const accountRepository = this.centralDataSource.getRepository(PokemonAccount);
 
         try {
@@ -77,10 +76,6 @@ export class PokeCenterAccountService {
             console.error('Erreur lors de la connexion :', error);
             res.status(401).json({error: 'Erreur lors de la connexion'});
 
-        } finally {
-            if (this.centralDataSource && this.centralDataSource.isInitialized) {
-                await this.centralDataSource.destroy();
-            }
         }
     }
 }

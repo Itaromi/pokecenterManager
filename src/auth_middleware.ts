@@ -1,16 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from './utils/jwt';
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'No token' });
+
+    if (!authHeader) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return; // <-- TRÈS IMPORTANT : return ici sans rien renvoyer
+    }
 
     const token = authHeader.split(' ')[1];
-    try {
-        const payload = verifyToken(token);
-        (req as any).user = payload;
-        next();
-    } catch {
-        res.status(403).json({ error: 'Invalid token' });
+
+    if (!token) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
     }
-}
+
+    try {
+        const decoded = verifyToken(token);
+        (req as any).user = decoded; // cast rapide ou tu peux créer un type plus propre
+        next(); // on continue vers la route suivante
+    } catch (error) {
+        res.status(401).json({ error: 'Invalid Token' });
+    }
+};
