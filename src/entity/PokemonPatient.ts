@@ -18,9 +18,6 @@ export class PokemonPatient {
     @Column({ type: 'varchar', length: 512, name: 'unique_id', nullable: false, unique: true })
     uniqueId!: string;
 
-    @Column({ type: 'varchar', length: 512, name: 'unique_id_hash', nullable: false })
-    uniqueIdHash!: string;
-
     @Column({ type: 'varchar', length: 512, name: 'nickname', nullable: false })
     nickname!: string;
 
@@ -69,7 +66,6 @@ export class PokemonPatient {
     @BeforeInsert()
     @BeforeUpdate()
     encryptSensitiveData() {
-        this.uniqueId = encrypt(this.uniqueId);
         this.nickname = encrypt(this.nickname);
         this.sexe = encrypt(this.sexe);
         this.trainerId = encrypt(this.trainerId);
@@ -87,7 +83,6 @@ export class PokemonPatient {
 
     @AfterLoad()
     decryptSensitiveData() {
-        this.decryptedFields.uniqueId = decrypt(this.uniqueId);
         this.decryptedFields.nickname = decrypt(this.nickname);
         this.decryptedFields.sexe = decrypt(this.sexe);
         this.decryptedFields.trainerId = decrypt(this.trainerId);
@@ -105,8 +100,7 @@ export class PokemonPatient {
     }
 
     // Getters pour accéder aux valeurs déchiffrées
-    getDecryptedUniqueId() { return this.decryptedFields.uniqueId as string; }
-    getUniqueIdHash() { return this.uniqueIdHash; }
+    getUniqueId() { return this.uniqueId as string; }
     getDecryptedNickname() { return this.decryptedFields.nickname as string; }
     getDecryptedSexe() { return this.decryptedFields.sexe as string; }
     getDecryptedTrainerId() { return this.decryptedFields.trainerId as string; }
