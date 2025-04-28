@@ -50,8 +50,10 @@ export class PokeCenterAccountService {
     async login(req: Request, res: Response): Promise<void> {
         const { email, mot_de_passe } = req.body;
 
+        const hashEmail = await bcrypt.hash(email, 10);
+
         const accountRepository = this.centralDataSource.getRepository(PokemonAccount);
-        const account = await accountRepository.findOneBy({ email });
+        const account = await accountRepository.findOneBy({ hashEmail });
 
         if (!account) {
             throw new Error('Compte non trouvé.');

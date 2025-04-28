@@ -12,6 +12,7 @@ import { PokeCenterAccountRouter } from './routes/PokeCenterAccountRoutes';
 
 // Importe le service que nous avons créé
 import { PokeCenterAccountService } from './service/PokeCenterAccountService';
+import {AuthRouter} from "./routes/authRoutes";
 
 // Configure Express
 const app = express();
@@ -50,6 +51,10 @@ async function bootstrap() {
         const pokemonAccountRouter = PokeCenterAccountRouter(accountService);
         app.use('/pokecenter', pokemonAccountRouter); // Toutes les routes définies dans pokemonAccountRouter seront préfixées par /pokecenter
         console.log("Pokemon Account router mounted at /pokecenter");
+
+        const authRouter = AuthRouter(accountService);
+        app.use('/pokecenter', authRouter);
+        console.log("Bienvenue ${req.user.email}!");
 
         // Route de test simple (peut rester ici ou être déplacée ailleurs)
         app.get('/', (req, res) => {
