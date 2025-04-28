@@ -54,7 +54,6 @@ export class PokemonPatientService {
 
             // Mappe les propriétés du DTO à l'entité.
             newPatient.uniqueId = patientData.uniqueId; // uniqueId sera chiffré par @BeforeInsert
-            newPatient.uniqueIdHash = await bcrypt.hash(newPatient.uniqueId, 10); // !! Utilisez votre fonction de hachage !!
             newPatient.nickname = patientData.nickname;
             newPatient.sexe = patientData.sexe;
             newPatient.trainerId = patientData.trainerId;
@@ -92,14 +91,9 @@ export class PokemonPatientService {
             accountDataSource = await this.getAccountDataSource(accountId);
             const patientRepository = accountDataSource.getRepository(PokemonPatient);
 
-            // 1. Calculer le hash du uniqueId de recherche (qui est clair ici)
-            const searchHash = await bcrypt.hash(uniqueId, 10); // !! Utilisez votre fonction de hachage !!
-
-            // 2. Rechercher l'entité par son hash
-            // Note: uniqueIdHash a select: false dans l'entité, il faut l'ajouter dans la query
             const patient: PokemonPatient | null = await patientRepository.findOne({
-                where: { uniqueIdHash: searchHash },
-                select: ['id', 'uniqueId', 'uniqueIdHash', 'nickname', 'sexe', 'trainerId', 'actualLevel', 'actualHp', 'dvHp', 'dvAttack', 'dvDefense', 'dvSpecialAttack', 'dvSpecialDefense', 'dvSpeed', 'heightCm', 'weightGr', /* ... autres colonnes nécessaires pour la recherche ou l'affichage ... */]
+                where: { uniqueId: uniqueId },
+                select: ['id', 'uniqueId', 'nickname', 'sexe', 'trainerId', 'actualLevel', 'actualHp', 'dvHp', 'dvAttack', 'dvDefense', 'dvSpecialAttack', 'dvSpecialDefense', 'dvSpeed', 'heightCm', 'weightGr', /* ... autres colonnes nécessaires pour la recherche ou l'affichage ... */]
             });
 
             if (!patient) {
@@ -110,7 +104,7 @@ export class PokemonPatientService {
             const patientDto: ReadPatientDto = new ReadPatientDto();
             // 3. Mapper les champs déchiffrés dans le DTO
             patientDto.id = patient.id;
-            patientDto.uniqueId = patient.getDecryptedUniqueId();
+            patientDto.uniqueId = patient.getUniqueId();
             patientDto.nickname = patient.getDecryptedNickname();
             patientDto.sexe = patient.getDecryptedSexe();
             patientDto.trainerId = patient.getDecryptedTrainerId();
