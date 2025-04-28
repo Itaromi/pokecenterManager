@@ -7,8 +7,8 @@ const config: Config = {
   tagline: 'API multi-tenant pour centres Pokémon 🩺⚡',
   favicon: 'img/pokecenterManager/favicon.ico',
 
-  url: 'https://your-pokecenter-doc.com',
-  baseUrl: '/',
+  url: 'http://younsylvestre.com',
+  baseUrl: '/pokecenterManager/',
 
   organizationName: 'Itaromi', // Ton GitHub user/org
   projectName: 'pokecenterManager', // Ton repo GitHub
